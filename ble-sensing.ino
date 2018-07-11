@@ -4,6 +4,7 @@
     Portions of this code are partially based in others such as
     CrowdSensing (by Bruno Fernandes),
     BLE_client and WatchdogTimer (example sketches).
+    
     MIT Licensed
 *************************************************/
 #include <BLEDevice.h>
@@ -14,7 +15,6 @@
 /** Probe Data **/
 #define ARRAY_SIZE        50
 #define SENSE_TYPE        "BLE"
-#define TOPIC             "ESP32/BLESENSING"
 
 /** Available Commands **/
 #define CMD_START         "Start"
@@ -32,6 +32,7 @@
 #define MQTTPORT          11111
 #define MQTTUSER          "dummy_user"
 #define MQTTPASSWORD      "dummy_pass"
+#define TOPIC             "ESP32/BLESENSING"
 
 /** WiFi Connection Data **/
 #define STATION_NETWORK   "dummy_wifi_net"   //Set station network
@@ -57,8 +58,8 @@ bool scanNow                        = false;
 /** Time Variables **/
 unsigned long sightingsInterval     = 60000;          //1 minute
 unsigned long connectionWait        = 35000;          //35 seconds
-unsigned long scanTime              = 30;             //30 seconds
-unsigned long sendTimer             = 40 + scanTime;  //40 seconds + (30s of the scan)
+unsigned long scanTime              = 45;             //45 seconds
+unsigned long sendTimer             = 30 + scanTime;  //30 seconds + (45s of the scan)
 
 /** Os Timer **/
 hw_timer_t *theTimer                = NULL;
@@ -198,9 +199,10 @@ void setupBLEScan(){
 }
 
 void setupMqtt(){
+  int connectionAttempts = 6;
   if(isConnected){
     client.setServer(MQTTSERVER, MQTTPORT);
-    while (!client.connected()) {
+    while (!client.connected() && connectionAttempts > 0) {
       Serial.print("*** Connecting to MQTT... "); 
       if (client.connect("ESP32Client", MQTTUSER, MQTTPASSWORD)) { 
         Serial.println("Connected!! ***"); 
@@ -210,9 +212,13 @@ void setupMqtt(){
         Serial.println(client.state());
         delay(2000); 
       }
+      connectionAttempts--;
+    }
+    if(!client.connected()){
+      Serial.println(F("*** It is not possible to connect to the MQTT Broker! ***"));
     }
   } else{
-    Serial.println(F("*** It is not possible to connect to the MQTT Server! There is no WiFi connection! ***"));
+    Serial.println(F("*** It is not possible to connect to the MQTT Broker! There is no WiFi connection! ***"));
   } 
 }
 
@@ -221,7 +227,8 @@ boolean publishMqtt(char topic[], char payload[]){
     //Required...
     setupMqtt();
     client.publish(topic, payload);
-    Serial.println("*** Payload Successfully Published ***"); 
+    Serial.print("*** Payload Successfully Published in topic: ");
+    Serial.print(TOPIC); Serial.println(" ***"); 
     return true;
   } else{
     Serial.println(F("*** It is not possible to publish data! There is no MQTT connection! ***"));
@@ -336,7 +343,7 @@ void buildAndPublish(bool clearD){
   //Push JSON
   char payload[root.measureLength()+1];
   root.printTo((char*)payload, root.measureLength()+1);
-  
+  //Handle error or success
   if(publishMqtt(TOPIC, payload)){
     if(clearD){
       Serial.println(F("*** Probe Data successfully published! Data will be cleared... ***"));
@@ -345,7 +352,7 @@ void buildAndPublish(bool clearD){
       Serial.println(F("*** Probe Data successfully published! NO data was cleared... ***"));
     }
   } else{
-    Serial.print(F("*** Failed to publish Probe Data!! ***"));
+    Serial.println(F("*** Failed to publish Probe Data in MQTT!! ***"));
   }
 }
 
