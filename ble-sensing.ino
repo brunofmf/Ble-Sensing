@@ -332,7 +332,7 @@ void buildAndPublish(bool clearD){
   root["type"] = SENSE_TYPE;
   JsonObject& tempTime = root.createNestedObject("timestamp");
   tempTime[".sv"] = millis();
-  JsonArray& probes = root.createNestedArray("probes" + String(dumpVersion++)); //Create child probes array
+  JsonArray& probes = root.createNestedArray("probes"); //Create child probes array
   //Fill JsonArray with data
   for(int i = 0; i < currIndex; i++){
     JsonObject& probe = probes.createNestedObject();
