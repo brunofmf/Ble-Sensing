@@ -15,6 +15,7 @@
 /** Probe Data **/
 #define ARRAY_SIZE        50
 #define SENSE_TYPE        "BLE"
+#define DEVICE_ID         "BRUNO_ID2"
 
 /** Available Commands **/
 #define CMD_START         "Start"
@@ -330,6 +331,7 @@ void buildAndPublish(bool clearD){
   DynamicJsonBuffer jsonBuffer; //The default initial size for DynamicJsonBuffer is 256. It allocates a new block twice bigger than the previous one.
   JsonObject& root = jsonBuffer.createObject(); //Create the Json object
   root["type"] = SENSE_TYPE;
+  root["deviceId"] = DEVICE_ID;
   JsonObject& tempTime = root.createNestedObject("timestamp");
   tempTime[".sv"] = millis();
   JsonArray& probes = root.createNestedArray("probes"); //Create child probes array
